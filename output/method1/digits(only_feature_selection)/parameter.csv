@@ -1,0 +1,3 @@
+f1_score_average,mkbit,evbit,plow_mk,phigh_mk,plow_ev,phigh_ev,ev_per,dt_depth,depth_low,penalty_ac,penalty_sz,penalty_fm,penalty_fl,AC,SZ,FM,FI,ngen,psize,pc,nvm,clones,vhigh
+macro,0.0,0.0,1.0,1.0,1.0,1.0,0.6,3.0,4.0,0.0,1000.0,0.0,1.0,1.0,1.0,0.0,0.0,,,,,,
+,,,,,,,,,,,,,,,,,,100.0,100.0,1.0,1.0,False,0.3

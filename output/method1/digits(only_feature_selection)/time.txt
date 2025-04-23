@@ -1,0 +1,5 @@
+Nsgaii run1 109.67241570004262 seconds
+Nsgaii run2 107.25531829986721 seconds
+Nsgaii run3 102.68257169984281 seconds
+Nsgaii run4 109.31736290012486 seconds
+Nsgaii run5 101.105926200049 seconds

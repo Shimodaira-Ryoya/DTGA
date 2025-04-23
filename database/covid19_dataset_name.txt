@@ -1,0 +1,1 @@
+None,Mild,Moderate,Severe
