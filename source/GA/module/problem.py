@@ -77,8 +77,8 @@ class Problem:
         """使用するサンプルの洗い出し"""
         self.subXmk = self.Xmk[self.submk_index_list[self.mk_i],:]  
         self.subymk = self.ymk[self.submk_index_list[self.mk_i]]    
-        self.subXev = self.Xev[self.subev_index_list[self.ev_j],:]  
-        self.subyev = self.yev[self.subev_index_list[self.ev_j]]    
+        self.subXev = self.Xev[self.subev_index_list[self.ev_j],:] 
+        self.subyev = self.yev[self.subev_index_list[self.ev_j]]  
         
         """特徴量の抽出"""
         self.subXmk = delete_x(self.subXmk,gene1)#削減されたデータ

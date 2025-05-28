@@ -14,7 +14,7 @@ def deal(ga_datas,others,dominate):
             pops=[]
             for run in ga_datas[i]['run']:
                 for gen in ga_datas[i]['gen']:
-                        pop_df=pd.read_csv(ga_datas[i]['folder']+'run{}/pop_g{}.csv'.format(str(run),str(gen)))
+                        pop_df=pd.read_csv(ga_datas[i]['folder']+'/run{}/pop_g{}.csv'.format(str(run),str(gen)))
                         pop_df['gen']=gen
                         pop_df['run']=run
                         pops.append(pop_df)

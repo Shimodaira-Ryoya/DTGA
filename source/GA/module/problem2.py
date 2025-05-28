@@ -74,10 +74,10 @@ class Problem:
         """使用するサンプルの洗い出し"""
         self.subXmk = self.Xtr[self.sub_index,:]
         self.subymk = self.ytr[self.sub_index] 
-        self.subXev = self.Xtr
-        self.subyev = self.ytr 
-        #self.subXev = self.Xtr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index), :] #sub_index以外の要素を取り出す
-        #self.subyev = self.ytr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index)]     
+        #self.subXev = self.Xtr
+        #self.subyev = self.ytr 
+        self.subXev = self.Xtr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index), :] #sub_index以外の要素を取り出す
+        self.subyev = self.ytr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index)]     
         """特徴量の抽出"""
         self.subXmk = delete_x(self.subXmk,gene1)#削減されたデータ
         self.subXev = delete_x(self.subXev,gene1)
@@ -101,6 +101,23 @@ class Problem:
         self.ev_ratio=self.subyev.shape[0]/self.ytr.shape[0]#評価サブセットのサンプル採用率(トレーニングデータ全体における割合)
         self.importance=importance_deal(gene1,self.clf.feature_importances_)#特徴量ごとの重要度を取得
         self.imp_uniformity=importance_uniformity(self.importance)#特徴量均一度の取得
+        """性能評価2"""
+        """from sklearn.model_selection import StratifiedKFold
+        kf=StratifiedKFold(n_splits=5,shuffle=True,random_state=0)
+        ac2l=[]
+        fm2l=[]
+        for i, (train_idx, test_idx) in enumerate(kf.split(self.subXev,self.subyev)):
+            Xtr,Xte=self.subXev[train_idx],self.subXev[test_idx]#データをindexに応じて抽出
+            ytr,yte=self.subyev[train_idx],self.subyev[test_idx]
+            ac2l.append(accuracy_score(yte,self.clf.predict(Xte)))#評価データでの精度
+            fm2l.append(f1_score(yte,self.clf.predict(Xte),average=self.f1_score_average))#評価データでのf値
+        #self.ac2=sum(ac2l)/len(ac2l)
+        #self.fm2=sum(fm2l)/len(fm2l)
+        ac2_variance = np.var(ac2l, ddof=1)
+        fm2_variance = np.var(fm2l, ddof=1)"""
+        
+            
+        
 
         """決定木情報を持ってくる"""
         dtinfo=dt_info.DTinfo()
@@ -111,11 +128,11 @@ class Problem:
         fitness +=[self.ac2]   if self.AC == 1 else []
         fitness +=[-self.size] if self.SZ == 1 else []
         fitness +=[self.fm2]   if self.FM == 1 else []
-        fitness +=[self.imp_uniformity] if self.FI == 1 else []
+        fitness +=[-self.imp_uniformity] if self.FI == 1 else []
         
         """ペナルティの計算"""#テスト未実施
         penalty=0
-        penalty += (len(self.sub_index)-self.penalty_dnum) if self.penalty_dnum < len(self.sub_index) else 0
+        penalty += (len(self.sub_index)-self.Xtr.shape[0]*self.penalty_dnum) if self.Xtr.shape[0]*self.penalty_dnum < len(self.sub_index) else 0
         penalty += (self.penalty_ac - self.ac2) if self.penalty_ac > self.ac2 else 0
         penalty += (self.penalty_fm - self.fm2) if self.penalty_fm > self.fm2 else 0
         penalty += (self.size - self.penalty_sz) if self.penalty_sz < self.size else 0
@@ -124,7 +141,7 @@ class Problem:
         """データとして残す値の設定"""#テスト未実施
         #値にスカラー以外を入れる場合、別途ea_base.ind.detail_dealで処理を書き加える
         detail={'AC(mk)':round(self.ac,3), 'AC(ev)':round(self.ac2,3), 'AC(test)':round(self.ac3,3), 'size':self.size,
-                'F1(mk)':round(self.fm,3), 'F1(ev)':round(self.fm2,3), 'F1(test)':round(self.fm3,3), 
+                'F1(mk)':round(self.fm,3), 'F1(ev)':round(self.fm2,3), 'F1(test)':round(self.fm3,3), #'ac2var':ac2_variance,'fm2var':fm2_variance,'fmcv':fm2_variance/self.fm2,
                 'mk_ratio':round(self.mk_ratio,3),'ev_ratio':round(self.ev_ratio,3),
                 #faverage
                 'importance_uniformity':round(self.imp_uniformity,3),

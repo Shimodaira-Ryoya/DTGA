@@ -129,7 +129,7 @@ def nsgaii(evaluate=None, select=None, recombine=None, mutate=None,
         nsgaii_survival_selection(pop, psize)#評価ソート＆淘汰
       
         """ Output the population """
-        if g%(ngen/10) == 0:         
+        if g%(ngen/5) == 0:         
             pop.pop_info_to_csv('pop_g{}.csv'.format(str(g)))#遺伝子情報（表現型情報等）を保存
             os.mkdir("DTinfo_gen{}".format(str(g)))#決定木構造情報を保存する
             pop.pop_dtinfo_to_csv('DTinfo_gen{}'.format(str(g)))
