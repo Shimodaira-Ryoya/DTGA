@@ -13,15 +13,14 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/breast_cancer_dataset.csv')
-X=df.iloc[:,1:-1]
-y=df.iloc[:,-1]
-xname=X.columns.tolist()
-yname=[0,1]
-X=X.values
-print(X.shape)
-print(y.value_counts())
-y=y.values
+df=pd.read_csv('../../database/drybeans_dataset.csv')
+X_df=df.iloc[:,1:-1]
+y_df=df.iloc[:,-1]
+X =X_df.values
+xname=X_df.columns.tolist()
+y,yname= pd.factorize(y_df)#値を整数値にエンコード
+print('table_shape;',X_df.shape)
+print('class sample;',y_df.value_counts())
 """データのk分割"""
 k=10
 kf=StratifiedKFold(n_splits=10,shuffle=True,random_state=0)
@@ -31,9 +30,9 @@ for fold, (train_idx, test_idx) in enumerate(kf.split(X,y)):
     
 #%%
 """Parameter Set"""
-outputfolder='../../output/simple_cart/pima/pima_CV10_depth11'
-f1_score_average='binary'#f値の計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
-depth=11
+outputfolder='../../output/simple_cart/drybeans/depth3'
+f1_score_average='weighted'#f値の計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
+depth=3
 
 #%%
 """Folder Creation"""
@@ -81,5 +80,6 @@ for i in range(k):
     dtinfos[i].write_csv(outputfolder+'/simpleCART_clfs/clf{}.csv'.format(str(i)))
 
 df =pd.DataFrame(values_list,columns=columns)
+print(df.mean())
 df.to_csv(outputfolder+'/simpleCART_data.csv')
 # %%
