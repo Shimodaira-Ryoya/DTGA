@@ -22,11 +22,11 @@ print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method2/pima/pima_dn05_nonuse_holdout'
+output_folder='../../output/method2/pima/pima_holdout_dn05_nonuse1.1'
 k=3
 prob_para={'f1_score_average':'binary',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
            'subnum':100,'sub_low':0.02,'sub_high':0.02,
-           'dt_depth':3, 'depth_low':2, 'penalty_dnum':0.5,
+           'dt_depth':0, 'depth_low':4, 'penalty_dnum':0.5,
            'penalty_ac':0.0, 'penalty_sz':1000, 'penalty_fm':0,'penalty_fl':1,
            'AC':0,'SZ':1,'FM':1,'FI':0,'feature_lock':None}
 ga_para={'ngen':50, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
@@ -51,7 +51,8 @@ for i in range(k):
     tic=timeit.default_timer()#tic-tocでアルゴリズムの駆動時間を計測
     """訓練＆テストデータ取得"""
     Xtr,Xte,ytr,yte = train_test_split(X, y, test_size=0.33, stratify=y, random_state=i)
-    print(Counter(y))
+    print('ytr class;',Counter(ytr))
+    print('yte class;',Counter(yte))
     """データ前処理"""
     problem=Problem(Xtr,ytr,Xte,yte,xn,yn,f1_score_average=prob_para['f1_score_average'],
                 subnum=prob_para['subnum'],sub_low=prob_para['sub_low'],sub_high=prob_para['sub_high'],

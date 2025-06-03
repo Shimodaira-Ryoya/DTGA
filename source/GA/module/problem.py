@@ -66,7 +66,7 @@ class Problem:
         gene1 = gene[ : self.xnum] if any(x != 0 for x in gene[:self.xnum]) else [1]*len(gene[:self.xnum])#もしgene1が全て0なら全て1に変える
         gene2 = gene[self.xnum : self.xnum + self.mkbit] if self.mkbit >= 1 else [0]#もしmkbitが0ならgene2=[0]
         gene3 = gene[self.xnum + self.mkbit : self.xnum + self.mkbit + self.evbit] if self.evbit >= 1 else [0] 
-        gene4 = gene[self.xnum + self.mkbit + self.evbit : ] if self.dt_depth >=0 else [0]
+        gene4 = gene[self.xnum + self.mkbit + self.evbit : ] if self.dt_depth >0 else [0]
         
         """遺伝子をデコード"""
         self.mk_i = convert_bit_dec(gene2)#採用するmk(i)のi

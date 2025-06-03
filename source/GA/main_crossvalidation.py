@@ -12,11 +12,12 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/pima_dataset.csv')
+df=pd.read_csv('../../database/drybeans_dataset.csv')
 X=df.iloc[:,1:-1]
 y=df.iloc[:,-1]
 xname=X.columns.tolist()
 yname=[0,1]
+yname=["SEKER" ,"BARBUNYA" , "BOMBAY" , "CALI" ,"HOROZ" , "SIRA" ,"DERMASON"]
 X=X.values
 print(X.shape)
 print(y.value_counts())
@@ -29,17 +30,17 @@ for fold, (train_idx, test_idx) in enumerate(kf.split(X,y)):
     print("test;",Counter(y[test_idx]))
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method1/pima/pima_basic1.1_fmsz'
-genlist=[0,20,40,60,80,100]#グラフを書く世代(世代間)
-genlist2=[100]#グラフを書く世代（実行間）
-prob_para={'f1_score_average':'binary',#f値の計測タイプ指定
+output_folder='../../output/method1/drybeans/drybean1'
+genlist=[0,10,20,30,40,50]#グラフを書く世代(世代間)
+genlist2=[0,50]#グラフを書く世代（実行間）
+prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定
            #binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
            'mkbit': 6, 'evbit': 6, 
-           'plow_mk':0.3, 'phigh_mk':0.9, 'plow_ev':0.3, 'phigh_ev':0.9,'ev_per':0.7,
+           'plow_mk':0.6, 'phigh_mk':1.0, 'plow_ev':0.6, 'phigh_ev':1.0,'ev_per':0.3,
            'dt_depth':3, 'depth_low':3,
            'penalty_ac':0.0, 'penalty_sz':10000, 'penalty_fm':0,'penalty_fl':1,
            'AC':0,'SZ':1,'FM':1,'FI':0}
-ga_para={'ngen':100, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
+ga_para={'ngen':50, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
 #%%
 """ディレクトリを移動"""
 os.mkdir(output_folder)#ディレクトリ作成
@@ -114,5 +115,37 @@ for g in genlist2:
         fig.savefig('graph/run_graph/{}_{}_scat_gen{}'.format(str(x),str(y),str(g)))
         plt.close(fig)
         
+
+# %%
+# %%
+#front0のうちデプロイするモデルを定める
+import pandas as pd
+k=10
+topn=20
+
+
+top_list=[]
+middle_list=[]
+bottom_list=[]
+for i in range(k):
+    df=pd.read_csv('run'+str(i)+'/pop_g50.csv')
+    df=df[df['front'] == 0]
+    df=df.sort_values(by='F1(ev)', ascending=False)
+    middle_index = len(df) // 2 
+    top_index = 1
+    bottom_index = len(df) * 8//10
+    middle_row = df.iloc[middle_index,:].to_dict()
+    top_row = df.iloc[top_index,:].to_dict()
+    bottom_row = df.iloc[bottom_index,:].to_dict()
+    middle_list.append(middle_row)
+    top_list.append(top_row)
+    bottom_list.append(bottom_row)
+
+dft=pd.DataFrame(top_list)
+dft.to_csv('top.csv',index=False)
+dfm=pd.DataFrame(middle_list)
+dfm.to_csv('middle.csv',index=False)
+dfb=pd.DataFrame(bottom_list)
+dfb.to_csv('bottom.csv',index=False)
 
 # %%

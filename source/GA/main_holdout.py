@@ -11,7 +11,7 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/pima_dataset.csv')
+df=pd.read_csv('../../database/drybeans_dataset.csv')
 X_df=df.iloc[:,1:-1]
 y_df=df.iloc[:,-1]
 X =X_df.values
@@ -21,14 +21,14 @@ print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method1/pima/pima_test'
+output_folder='../../output/method1/drybeans/holdout_depth4_7_constAC85'
 k=3#繰り返し実行回数
 prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
            'mkbit': 6, 'evbit': 6, 
-           'plow_mk':0.8, 'phigh_mk':1.0, 'plow_ev':0.8, 'phigh_ev':1.0,'ev_per':0.3,
-           'dt_depth':3, 'depth_low':3,
-           'penalty_ac':0.0, 'penalty_sz':10000, 'penalty_fm':0,'penalty_fl':1,
-           'AC':0,'SZ':1,'FM':1,'FI':0}
+           'plow_mk':0.3, 'phigh_mk':1.0, 'plow_ev':0.3, 'phigh_ev':1.0,'ev_per':0.3,
+           'dt_depth':2, 'depth_low':4,
+           'penalty_ac':0.85, 'penalty_sz':10000, 'penalty_fm':0,'penalty_fl':1,
+           'AC':1,'SZ':1,'FM':0,'FI':0}
 ga_para={'ngen':50, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
 genlist =list(range(0, ga_para['ngen']+1, int(ga_para['ngen']/5)))#グラフを書く世代(世代間)
 genlist2=[ga_para['ngen']]
@@ -52,7 +52,8 @@ for i in range(k):
     tic=timeit.default_timer()#tic-tocでアルゴリズムの駆動時間を計測
     """訓練＆テストデータ取得"""
     Xtr,Xte,ytr,yte = train_test_split(X, y, test_size=0.33, stratify=y, random_state=i)
-    print(Counter(y))
+    print('ytr class;',Counter(ytr))
+    print('yte class;',Counter(yte))
     """データ前処理"""
     problem=Problem(Xtr,ytr,Xte,yte,xn,yn,f1_score_average=prob_para['f1_score_average'],
                 mkbit=prob_para['mkbit'],evbit=prob_para['evbit'],
@@ -76,8 +77,8 @@ ftime.close()#駆動時間に関するファイルを閉じる
 #%%
 """グラフ作成フェーズ※随時設定"""
 """ほしい散布図リストを設定"""
-xl=['AC(ev)','AC(test)','F1(ev)','F1(test)','F1(ev)','AC(ev)']#x軸
-yl=['size',  'size',    'size',    'size',  'F1(test)', 'AC(test)']#y軸
+xl=['AC(ev)','AC(test)','F1(ev)','F1(test)','F1(ev)','AC(ev)','mk_ratio','mk_ratio']#x軸
+yl=['size',  'size',    'size',    'size',  'F1(test)', 'AC(test)','AC(test)','size']#y軸
 """ディレクトリ作成"""
 os.mkdir('graph')
 os.mkdir('graph/gen_graph')

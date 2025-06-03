@@ -61,11 +61,11 @@ class Problem:
         if self.feature_lock is None:
             gene1 = gene[ : self.xnum] if any(x != 0 for x in gene[:self.xnum]) else [1]*len(gene[:self.xnum])#もしgene1が全て0なら全て1に変える
             gene2 = gene[self.xnum : self.xnum + self.subnum]  if any(x != 0 for x in gene[self.xnum : self.xnum + self.subnum]) else [1]*len(gene[self.xnum : self.xnum + self.subnum])
-            gene3 = gene[self.xnum + self.subnum : ] if self.dt_depth >=0 else [0]
+            gene3 = gene[self.xnum + self.subnum : ] if self.dt_depth >0 else [0]
         else:
             gene1 = self.feature_lock
             gene2 = gene[ : self.subnum]  if any(x != 0 for x in gene[ : self.subnum]) else [1]*len(gene[ : self.subnum])
-            gene3 = gene[self.subnum : ] if self.dt_depth >=0 else [0]
+            gene3 = gene[self.subnum : ] if self.dt_depth >0 else [0]
         """遺伝子をデコード"""
         depth = convert_bit_dec(gene3)     
         self.maxdepth=depth+self.depth_low #決定木の最大深度
