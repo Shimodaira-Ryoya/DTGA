@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score,f1_score
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/pima_dataset.csv')
+df=pd.read_csv('../../database/strokes_dataset.csv')
 X_df=df.iloc[:,1:-1]
 y_df=df.iloc[:,-1]
 X =X_df.values
@@ -33,9 +33,9 @@ for x in X_df.columns:
     
 #%%
 """Parameter Set"""
-outputfolder='../../output/simple_svm/pima/rbf_default'
+outputfolder='../../output/simple_svm/strokes/poly_default'
 f1_score_average='binary'#f値の計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
-kernel='rbf' # カーネル: 'linear', 'rbf', 'poly', 'sigmoid' など
+kernel='poly' # カーネル: 'linear', 'rbf', 'poly', 'sigmoid' など
 # %%
 """Folder Creation"""
 os.mkdir(outputfolder)
@@ -49,12 +49,12 @@ for i, (train_idx, test_idx) in enumerate(kf.split(X,y)):
     Xte_scaled = scaler.transform(Xte)#トレーニングデータのパラメータでテストデータを正規化している？
     ytr,yte=y[train_idx],y[test_idx]
     svm = SVC(kernel=kernel,class_weight='balanced') 
-    svm.fit(Xtr, ytr)
+    svm.fit(Xtr_scaled, ytr)
     """Evaluate"""
-    ac   = accuracy_score(ytr,svm.predict(Xtr))#学習データでの精度
-    ac3  = accuracy_score(yte,svm.predict(Xte))#がちテストデータでの精度
-    fm  = f1_score(ytr,svm.predict(Xtr),average=f1_score_average)#学習データでのf値
-    fm3 = f1_score(yte,svm.predict(Xte),average=f1_score_average)#がちテストデータでのf値
+    ac   = accuracy_score(ytr,svm.predict(Xtr_scaled))#学習データでの精度
+    ac3  = accuracy_score(yte,svm.predict(Xte_scaled))#がちテストデータでの精度
+    fm  = f1_score(ytr,svm.predict(Xtr_scaled),average=f1_score_average)#学習データでのf値
+    fm3 = f1_score(yte,svm.predict(Xte_scaled),average=f1_score_average)#がちテストデータでのf値
 
     
     data={'AC(mk)':round(ac,3), 'AC(test)':round(ac3,3),
@@ -63,6 +63,7 @@ for i, (train_idx, test_idx) in enumerate(kf.split(X,y)):
 
 """Output Model Information"""
 df = pd.DataFrame(datas)
+print(df.mean())
 df.to_csv(outputfolder+'/simpleSVM_data.csv')
 
 # %%
