@@ -12,17 +12,16 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/adult_dataset.csv')
-X=df.iloc[:,1:-1]
-y=df.iloc[:,-1]
-xname=X.columns.tolist()
-yname=[0,1]
-#yname=["SEKER" ,"BARBUNYA" , "BOMBAY" , "CALI" ,"HOROZ" , "SIRA" ,"DERMASON"]
-print(X.columns)
-X=X.values
-print(X.shape)
-print(y.value_counts())
-y=y.values
+df=pd.read_csv('../../database/redwine_dataset.csv')
+X_df=df.iloc[:,1:-1]
+y_df=df.iloc[:,-1]
+X =X_df.values
+xn=X_df.columns.tolist()
+y,yn= pd.factorize(y_df)#値を整数値にエンコード
+#y,yn=y_df.values,[0,1]
+print('table_shape;',X_df.shape)
+print('class sample;',y_df.value_counts())
+print(yn)
 """データのk分割"""
 k=10
 kf=StratifiedKFold(n_splits=10,shuffle=True,random_state=0)
@@ -31,16 +30,17 @@ for fold, (train_idx, test_idx) in enumerate(kf.split(X,y)):
     print("test;",Counter(y[test_idx]))
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method2/strokes/dn05_nonuse_fmsz_acsz'
-prob_para={'f1_score_average':'binary',#f値の計測タイプ指定
-           #binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+output_folder='../../output/method2/adult/dn05_nonuse_fmsz_acsz'
+prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+           'all_data_evaluation':True,#評価データを全トレーニングデータにするか
            'subnum':100,'sub_low':0.02,'sub_high':0.02,
-           'dt_depth':3, 'depth_low':3, 'penalty_dnum':0.5,
-           'penalty_ac':0.0, 'penalty_sz':1000, 'penalty_fm':0,'penalty_fl':1,
-           'AC':1,'SZ':1,'FM':0,'FI':0,'feature_lock':None}
-ga_para={'ngen':50, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
+           'dt_depth':0, 'depth_low':20, 'penalty_dnum':[0.8,0.95],
+           'penalty_ac':0, 'penalty_sz':1000, 'penalty_fm':0,'penalty_fl':1,
+           'AC':0,'SZ':1,'FM':1,'FI':0,
+           'feature_lock':None, 'dtinfo_store':False}
+ga_para={'ngen':50, 'keepsimilar':False,'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.7}
 genlist =list(range(0, ga_para['ngen']+1, int(ga_para['ngen']/5)))#グラフを書く世代(世代間)
-genlist2=[ga_para['ngen']]
+genlist2=[ga_para['ngen']]#実行回間
 print(genlist,genlist2)
 #%%
 """最適化問題を設定"""
@@ -63,11 +63,11 @@ for i, (train_idx, test_idx) in enumerate(kf.split(X,y)):
     Xtr,Xte=X[train_idx],X[test_idx]#データをindexに応じて抽出
     ytr,yte=y[train_idx],y[test_idx]
     """データ前処理"""
-    problem=Problem(Xtr,ytr,Xte,yte,xname,yname,f1_score_average=prob_para['f1_score_average'],
+    problem=Problem(Xtr,ytr,Xte,yte,xn,yn,f1_score_average=prob_para['f1_score_average'],all_data_evaluation=prob_para['all_data_evaluation'],
                 subnum=prob_para['subnum'],sub_low=prob_para['sub_low'],sub_high=prob_para['sub_high'],
                 dt_depth=prob_para['dt_depth'],depth_low=prob_para['depth_low'],penalty_dnum=prob_para['penalty_dnum'],
                 penalty_ac=prob_para['penalty_ac'],penalty_fl=prob_para['penalty_fl'],penalty_sz=prob_para['penalty_sz'],penalty_fm=prob_para['penalty_fm'],
-                AC=prob_para['AC'],SZ=prob_para['SZ'],FM=prob_para['FM'],FI=prob_para['FI'],feature_lock=prob_para['feature_lock'])
+                AC=prob_para['AC'],SZ=prob_para['SZ'],FM=prob_para['FM'],FI=prob_para['FI'],feature_lock=prob_para['feature_lock'],dtinfo_store=['dtinfo_store'])
     problem.preprocessing(i)#データ前処理
     """GAフェーズ実行"""
     pop = nsgaii(evaluate = problem.fitness, 
@@ -75,7 +75,7 @@ for i, (train_idx, test_idx) in enumerate(kf.split(X,y)):
            mutate = ea.bit_flip_mutation, initype='binary', seed=i, 
            psize=ga_para['psize'], nobj=problem.nobj, nvar=problem.genelen, vlow=0, 
            vhigh=ga_para['vhigh'], ngen=ga_para['ngen'], pcx=ga_para['pc'], 
-           pmut=ga_para['nvm']/problem.genelen, keepclones = ga_para['clones'])#進化計算フェーズ 
+           pmut=ga_para['nvm']/problem.genelen, keepclones = ga_para['clones'],keepsimilar=ga_para['keepsimilar'])#進化計算フェーズ 
     """終了処理"""   
     toc=timeit.default_timer()#時間計測終了
     ftime.write('Nsgaii run' +str(i)+ ' ' + str(toc - tic) + ' seconds\n')#駆動時間の書き込み

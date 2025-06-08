@@ -17,6 +17,7 @@ y_df=df.iloc[:,-1]
 X =X_df.values
 xn=X_df.columns.tolist()
 y,yn= pd.factorize(y_df)#値を整数値にエンコード
+#y,yn= y_df.values,[0,1]
 print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 # %%
@@ -24,12 +25,14 @@ print('class sample;',y_df.value_counts())
 output_folder='../../output/method1/drybeans/holdout_depth4_7_constAC85'
 k=3#繰り返し実行回数
 prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+           'all_data_evaluation':True,
+           'dtinfo_store':True,
            'mkbit': 6, 'evbit': 6, 
            'plow_mk':0.3, 'phigh_mk':1.0, 'plow_ev':0.3, 'phigh_ev':1.0,'ev_per':0.3,
            'dt_depth':2, 'depth_low':4,
            'penalty_ac':0.85, 'penalty_sz':10000, 'penalty_fm':0,'penalty_fl':1,
            'AC':1,'SZ':1,'FM':0,'FI':0}
-ga_para={'ngen':50, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
+ga_para={'ngen':50, 'keepsimilar':True, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
 genlist =list(range(0, ga_para['ngen']+1, int(ga_para['ngen']/5)))#グラフを書く世代(世代間)
 genlist2=[ga_para['ngen']]
 print("世代プロット;",genlist)
@@ -55,7 +58,8 @@ for i in range(k):
     print('ytr class;',Counter(ytr))
     print('yte class;',Counter(yte))
     """データ前処理"""
-    problem=Problem(Xtr,ytr,Xte,yte,xn,yn,f1_score_average=prob_para['f1_score_average'],
+    problem=Problem(Xtr,ytr,Xte,yte,xn,yn,
+                f1_score_average=prob_para['f1_score_average'],all_data_evaluation=prob_para['all_data_evaluation'],dtinfo_store=prob_para['dtinfo_store'],
                 mkbit=prob_para['mkbit'],evbit=prob_para['evbit'],
                 plow_mk=prob_para['plow_mk'],phigh_mk=prob_para['phigh_mk'],plow_ev=prob_para['plow_ev'],phigh_ev=prob_para['phigh_ev'],
                 ev_per=prob_para['ev_per'],dt_depth=prob_para['dt_depth'],depth_low=prob_para['depth_low'],
@@ -68,7 +72,7 @@ for i in range(k):
            mutate = ea.bit_flip_mutation, initype='binary', seed=i, 
            psize=ga_para['psize'], nobj=problem.nobj, nvar=problem.genelen, vlow=0, 
            vhigh=ga_para['vhigh'], ngen=ga_para['ngen'], pcx=ga_para['pc'], 
-           pmut=ga_para['nvm']/problem.genelen, keepclones = ga_para['clones'])#進化計算フェーズ 
+           pmut=ga_para['nvm']/problem.genelen, keepclones = ga_para['clones'],keepsimilar=ga_para['keepsimilar'])#進化計算フェーズ 
     """終了処理"""   
     toc=timeit.default_timer()#時間計測終了
     ftime.write('Nsgaii run' +str(i)+ ' ' + str(toc - tic) + ' seconds\n')#駆動時間の書き込み

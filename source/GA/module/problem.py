@@ -8,8 +8,10 @@ from . import dt_info
 class Problem:
     def __init__(self,Xtr,ytr,Xte,yte,xname,yname,
                  mkbit,evbit,plow_mk,phigh_mk,plow_ev,phigh_ev,ev_per,
-                 dt_depth,depth_low,AC,SZ,FI,FM,f1_score_average,
-                 penalty_ac=0,penalty_sz=5000,penalty_fm=0,penalty_fl=1):
+                 dt_depth,depth_low,AC,SZ,FI,FM,
+                 f1_score_average,all_data_evaluation,
+                 penalty_ac=0,penalty_sz=5000,penalty_fm=0,penalty_fl=1,
+                 dtinfo_store=False):
         """dataset"""
         self.Xtr=Xtr#ndarray(np.float64)  最適化に用いる入力データセット
         self.ytr=ytr#ndarray(np.int32)    最適化に用いる出力データセット
@@ -28,6 +30,8 @@ class Problem:
         self.phigh_ev=phigh_ev #plow~phigh
         self.ev_per=ev_per     #学習データを決定木作成用データセットと決定木評価用データセットに分けるときの後者の割合
         self.f1_score_average=f1_score_average#f値の計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
+        self.all_data_evaluation=all_data_evaluation#評価データを全トレーニングデータにするか否か
+        self.dtinfo_store=dtinfo_store#決定木構造情報を保存するか否か
         """fitness"""
         #遺伝子評価に用いる指標、0で不採用、1で採用
         self.AC=AC#精度：遺伝子から作成された決定木を決定木評価用データセットに通した時の正解率
@@ -76,9 +80,14 @@ class Problem:
         
         """使用するサンプルの洗い出し"""
         self.subXmk = self.Xmk[self.submk_index_list[self.mk_i],:]  
-        self.subymk = self.ymk[self.submk_index_list[self.mk_i]]    
-        self.subXev = self.Xev[self.subev_index_list[self.ev_j],:] 
-        self.subyev = self.yev[self.subev_index_list[self.ev_j]]  
+        self.subymk = self.ymk[self.submk_index_list[self.mk_i]] 
+        """評価データを選択する"""
+        if self.all_data_evaluation==True:
+            self.subXev=self.Xtr
+            self.subyev=self.ytr
+        else:
+            self.subXev = self.Xev[self.subev_index_list[self.ev_j],:] 
+            self.subyev = self.yev[self.subev_index_list[self.ev_j]]  
         
         """特徴量の抽出"""
         self.subXmk = delete_x(self.subXmk,gene1)#削減されたデータ
@@ -105,8 +114,11 @@ class Problem:
         self.imp_uniformity=importance_uniformity(self.importance)#特徴量均一度の取得
 
         """決定木情報を持ってくる"""
-        dtinfo=dt_info.DTinfo()
-        dtinfo.read_clf(self.clf,self.sxn,self.yn)
+        if self.dtinfo_store==True:
+            dtinfo=dt_info.DTinfo()
+            dtinfo.read_clf(self.clf,self.sxn,delete_yname(self.yn,self.subymk))
+        else:
+            dtinfo=None
         
         """評価値の決定"""
         fitness = []
@@ -127,7 +139,6 @@ class Problem:
         detail={'AC(mk)':round(self.ac,3), 'AC(ev)':round(self.ac2,3), 'AC(test)':round(self.ac3,3), 'size':self.size,
                 'F1(mk)':round(self.fm,3), 'F1(ev)':round(self.fm2,3), 'F1(test)':round(self.fm3,3), 
                 'mk(i)':self.mk_i, 'mk_ratio':round(self.mk_ratio,3), 'ev(j)':self.ev_j, 'ev_ratio':round(self.ev_ratio,3),
-                #faverage
                 'importance_uniformity':round(self.imp_uniformity,3),
                 'importance_list':dict(zip(self.xn, self.importance))#ea_baseで特別な処理してる
                 }
@@ -195,6 +206,19 @@ def delete_xname(xnames,xbit):
         if xbit[i]==1:
             sxname.append(xnames[i])
     return sxname
+
+def delete_yname(yn_list,y_array):
+    """y_arrayに存在しない値と同じインデックスをyn_listから参照し、削除
+
+    Args:
+        yn_list (list): 名前リスト、リストの長さはy_arrayの値の種類と同じかそれ以上
+        y_array (ndarray): yデータ intの0~の整数を想定
+    """
+    syn_list=[]
+    for index in range(yn_list):
+        if index in y_array:
+            syn_list.append(syn_list[index])
+    return syn_list
 
 def importance_deal(gene1,valuelist):
     """特徴量重要度を特徴量ごとのリストとして保存

@@ -56,7 +56,7 @@ def nsgaii_survival_selection(pop, popsize):
 
 def nsgaii(evaluate=None, select=None, recombine=None, mutate=None, 
     seed=None, psize=None, nobj=None, nvar=None, vlow=None, vhigh=None, 
-    initype=None, ngen=None, pcx=None, pmut=None, keepclones = False):
+    initype=None, ngen=None, pcx=None, pmut=None, keepclones = False, keepsimilar=False):
     """NSGA-llのアルゴリズムに基づいた処理を行う
     Args:
         evaluate(function):遺伝子評価の関数 
@@ -72,6 +72,7 @@ def nsgaii(evaluate=None, select=None, recombine=None, mutate=None,
         pcx(float):交叉確率
         pmut(float):突然変異確率(一つの変数に対して)
         keepclones(bool):親と全く同じ遺伝子を残すか否か
+        keepsimilar(bool):評価値が同じ個体を実行不可能解にするか否か
     """
     random.seed(seed)
     """ Initial population  """#初期集団生成
@@ -91,8 +92,6 @@ def nsgaii(evaluate=None, select=None, recombine=None, mutate=None,
 
     """store population informations"""
     pop.pop_info_to_csv('pop_g0.csv')#遺伝子情報（表現型情報等）を保存
-    os.mkdir("DTinfo_gen0")#決定木構造情報を保存する
-    pop.pop_dtinfo_to_csv('DTinfo_gen0')
     print(' --Generation 0')
    
     for g in range(1, ngen+1):
@@ -125,15 +124,27 @@ def nsgaii(evaluate=None, select=None, recombine=None, mutate=None,
             pop[:] = join_pop[:]
         else:
             pop.extend(offspring)
-
+            
+        """Delete similar individuals"""#評価値が同じ遺伝子は実行不可能解に
+        if keepsimilar == False:
+            spop = []
+            for ind in reversed(pop):
+                if  any(ind.fitness == sind.fitness for sind in spop):
+                        ind.penalty=1
+                else:
+                    spop.append(ind)
+    
+            
         nsgaii_survival_selection(pop, psize)#評価ソート＆淘汰
       
         """ Output the population """
         if g%(ngen/5) == 0:         
             pop.pop_info_to_csv('pop_g{}.csv'.format(str(g)))#遺伝子情報（表現型情報等）を保存
-            os.mkdir("DTinfo_gen{}".format(str(g)))#決定木構造情報を保存する
-            pop.pop_dtinfo_to_csv('DTinfo_gen{}'.format(str(g)))
             print(' --Generation ', g)
+            
+        if g==ngen and pop[0].dtinfo is not None:
+           os.mkdir("DTinfo_gen{}".format(str(g)))#決定木構造情報を保存する
+           pop.pop_dtinfo_to_csv('DTinfo_gen{}'.format(str(g)))
 
     print('Ends Nsgaii')
     return pop

@@ -75,7 +75,7 @@ class DTinfo:
             'node_depth':self.node_depth,
             'is_leaves':self.is_leaves
             })
-        df_values=pd.DataFrame(self.values,columns=self.yn)#クラスごとのサンプル割合を示すdf
+        df_values=pd.DataFrame(self.values,columns=self.yn)#クラスごとのサンプル割合を示すdf#おそらくvaluesに全てのクラスが含まれていないとバグる
         df_values.insert(loc=0, column='values', value=np.nan)#dfの前にvalue列(空値)を追加
         df=pd.concat([df,df_values],axis=1)
         df.to_csv(directory)

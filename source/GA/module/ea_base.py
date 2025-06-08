@@ -1,6 +1,7 @@
 import random, sys
 import copy
 import pandas as pd
+from . import dt_info
 
 class Individual(list):
     """一つの遺伝子"""

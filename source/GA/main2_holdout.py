@@ -12,24 +12,27 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/pima_dataset.csv')
+df=pd.read_csv('../../database/redwine_dataset.csv')
 X_df=df.iloc[:,1:-1]
 y_df=df.iloc[:,-1]
 X =X_df.values
 xn=X_df.columns.tolist()
 y,yn= pd.factorize(y_df)#値を整数値にエンコード
+#y,yn=y_df.values,[0,1]
 print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method2/pima/pima_holdout_dn05_nonuse1.1'
+output_folder='../../output/method2/wine_red/ho0.67_dp20_alldata_fmsz'
 k=3
-prob_para={'f1_score_average':'binary',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+           'all_data_evaluation':True,#評価データを全トレーニングデータにするか
            'subnum':100,'sub_low':0.02,'sub_high':0.02,
-           'dt_depth':0, 'depth_low':4, 'penalty_dnum':0.5,
-           'penalty_ac':0.0, 'penalty_sz':1000, 'penalty_fm':0,'penalty_fl':1,
-           'AC':0,'SZ':1,'FM':1,'FI':0,'feature_lock':None}
-ga_para={'ngen':50, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
+           'dt_depth':0, 'depth_low':20, 'penalty_dnum':[0.8,0.95],
+           'penalty_ac':0, 'penalty_sz':1000, 'penalty_fm':0,'penalty_fl':1,
+           'AC':0,'SZ':1,'FM':1,'FI':0,
+           'feature_lock':None, 'dtinfo_store':False}
+ga_para={'ngen':50, 'keepsimilar':False,'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.7}
 genlist =list(range(0, ga_para['ngen']+1, int(ga_para['ngen']/5)))#グラフを書く世代(世代間)
 genlist2=[ga_para['ngen']]
 print(genlist,genlist2)
@@ -40,7 +43,7 @@ os.chdir(output_folder)#ディレクトリ移動
 """ハイパーパラメータの保存"""
 df_hp = pd.DataFrame([prob_para,ga_para])
 df_hp.to_csv('parameter.csv',index=False)
-"""アルゴリズム実行(k分割交差検証)"""
+"""アルゴリズム実行(holdout検証)"""
 ftime = open('time.txt', 'w', 1)#アルゴリズムの駆動時間を出力するファイルを作り､書き込む
 for i in range(k):
     """ディレクトリ作成＆移動"""
@@ -54,11 +57,11 @@ for i in range(k):
     print('ytr class;',Counter(ytr))
     print('yte class;',Counter(yte))
     """データ前処理"""
-    problem=Problem(Xtr,ytr,Xte,yte,xn,yn,f1_score_average=prob_para['f1_score_average'],
+    problem=Problem(Xtr,ytr,Xte,yte,xn,yn,f1_score_average=prob_para['f1_score_average'],all_data_evaluation=prob_para['all_data_evaluation'],
                 subnum=prob_para['subnum'],sub_low=prob_para['sub_low'],sub_high=prob_para['sub_high'],
                 dt_depth=prob_para['dt_depth'],depth_low=prob_para['depth_low'],penalty_dnum=prob_para['penalty_dnum'],
                 penalty_ac=prob_para['penalty_ac'],penalty_fl=prob_para['penalty_fl'],penalty_sz=prob_para['penalty_sz'],penalty_fm=prob_para['penalty_fm'],
-                AC=prob_para['AC'],SZ=prob_para['SZ'],FM=prob_para['FM'],FI=prob_para['FI'],feature_lock=prob_para['feature_lock'])
+                AC=prob_para['AC'],SZ=prob_para['SZ'],FM=prob_para['FM'],FI=prob_para['FI'],feature_lock=prob_para['feature_lock'],dtinfo_store=prob_para['dtinfo_store'])
     problem.preprocessing(i)#データ前処理
     """GAフェーズ実行"""
     pop = nsgaii(evaluate = problem.fitness, 
@@ -66,7 +69,7 @@ for i in range(k):
            mutate = ea.bit_flip_mutation, initype='binary', seed=i, 
            psize=ga_para['psize'], nobj=problem.nobj, nvar=problem.genelen, vlow=0, 
            vhigh=ga_para['vhigh'], ngen=ga_para['ngen'], pcx=ga_para['pc'], 
-           pmut=ga_para['nvm']/problem.genelen, keepclones = ga_para['clones'])#進化計算フェーズ 
+           pmut=ga_para['nvm']/problem.genelen, keepclones = ga_para['clones'],keepsimilar=ga_para['keepsimilar'])#進化計算フェーズ 
     """終了処理"""   
     toc=timeit.default_timer()#時間計測終了
     ftime.write('Nsgaii run' +str(i)+ ' ' + str(toc - tic) + ' seconds\n')#駆動時間の書き込み
@@ -75,8 +78,8 @@ ftime.close()#駆動時間に関するファイルを閉じる
 #%%
 """グラフ作成フェーズ※随時設定"""
 """ほしい散布図リストを設定"""
-xl=['AC(ev)','AC(test)','F1(ev)','F1(test)','F1(ev)','AC(ev)']#x軸
-yl=['size',  'size',    'size',    'size',  'F1(test)', 'AC(test)']#y軸
+xl=['AC(ev)','AC(test)','F1(ev)','F1(test)','F1(ev)','AC(ev)','mk_ratio','mk_ratio']#x軸
+yl=['size',  'size',    'size',    'size',  'F1(test)', 'AC(test)','F1(test)','AC(test)']#y軸
 """ディレクトリ作成"""
 os.mkdir('graph')
 os.mkdir('graph/gen_graph')
@@ -106,3 +109,4 @@ for g in genlist2:
         ax=sns.scatterplot(data=pltdf, x=x, y=y, hue="run",alpha=0.75,palette="Set1")
         fig.savefig('graph/run_graph/{}_{}_scat_gen{}'.format(str(x),str(y),str(g)))
         plt.close(fig)
+# %%

@@ -8,9 +8,10 @@ from . import dt_info
 class Problem:
     def __init__(self,Xtr,ytr,Xte,yte,xname,yname,
                  subnum,sub_low,sub_high,
-                 dt_depth,depth_low,AC,SZ,FI,FM,f1_score_average,
+                 dt_depth,depth_low,AC,SZ,FI,FM,
+                 f1_score_average,all_data_evaluation,
                  penalty_dnum,penalty_ac=0,penalty_sz=5000,penalty_fm=0,penalty_fl=1,
-                 feature_lock=None):
+                 feature_lock=None,dtinfo_store=False):
         """dataset"""
         self.Xtr=Xtr#ndarray(np.float64)  最適化に用いる入力データセット
         self.ytr=ytr#ndarray(np.int32)    最適化に用いる出力データセット
@@ -25,6 +26,8 @@ class Problem:
         self.dt_depth=dt_depth#決定木の深度情報 g4の長さ
         self.depth_low=depth_low#CARTの最大深度の最低数　
         self.f1_score_average=f1_score_average#f1_scoreの計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
+        self.all_data_evaluation=all_data_evaluation#全てのデータで評価を行う
+        self.dtinfo_store=dtinfo_store#dtinfoのデータを保存するかどうか
         """fitness"""
         #遺伝子評価に用いる指標、0で不採用、1で採用
         self.AC=AC#精度：遺伝子から作成された決定木を決定木評価用データセットに通した時の正解率
@@ -73,11 +76,16 @@ class Problem:
         self.sub_index=np.unique(np.concatenate(sublist))#listの要素の配列をすべて結合したのち、重複する数字を排除
         """使用するサンプルの洗い出し"""
         self.subXmk = self.Xtr[self.sub_index,:]
-        self.subymk = self.ytr[self.sub_index] 
-        #self.subXev = self.Xtr
-        #self.subyev = self.ytr 
-        self.subXev = self.Xtr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index), :] #sub_index以外の要素を取り出す
-        self.subyev = self.ytr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index)]     
+        self.subymk = self.ytr[self.sub_index]
+        
+        """評価データをどうするか"""
+        if self.all_data_evaluation==True:    
+            self.subXev = self.Xtr
+            self.subyev = self.ytr 
+        else:
+            self.subXev = self.Xtr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index), :] #sub_index以外の要素を取り出す
+            self.subyev = self.ytr[~np.isin(np.arange(self.Xtr.shape[0]), self.sub_index)]     
+            
         """特徴量の抽出"""
         self.subXmk = delete_x(self.subXmk,gene1)#削減されたデータ
         self.subXev = delete_x(self.subXev,gene1)
@@ -101,27 +109,13 @@ class Problem:
         self.ev_ratio=self.subyev.shape[0]/self.ytr.shape[0]#評価サブセットのサンプル採用率(トレーニングデータ全体における割合)
         self.importance=importance_deal(gene1,self.clf.feature_importances_)#特徴量ごとの重要度を取得
         self.imp_uniformity=importance_uniformity(self.importance)#特徴量均一度の取得
-        """性能評価2"""
-        """from sklearn.model_selection import StratifiedKFold
-        kf=StratifiedKFold(n_splits=5,shuffle=True,random_state=0)
-        ac2l=[]
-        fm2l=[]
-        for i, (train_idx, test_idx) in enumerate(kf.split(self.subXev,self.subyev)):
-            Xtr,Xte=self.subXev[train_idx],self.subXev[test_idx]#データをindexに応じて抽出
-            ytr,yte=self.subyev[train_idx],self.subyev[test_idx]
-            ac2l.append(accuracy_score(yte,self.clf.predict(Xte)))#評価データでの精度
-            fm2l.append(f1_score(yte,self.clf.predict(Xte),average=self.f1_score_average))#評価データでのf値
-        #self.ac2=sum(ac2l)/len(ac2l)
-        #self.fm2=sum(fm2l)/len(fm2l)
-        ac2_variance = np.var(ac2l, ddof=1)
-        fm2_variance = np.var(fm2l, ddof=1)"""
-        
-            
-        
 
         """決定木情報を持ってくる"""
-        dtinfo=dt_info.DTinfo()
-        dtinfo.read_clf(self.clf,self.sxn,self.yn)
+        if self.dtinfo_store==True:
+            dtinfo=dt_info.DTinfo()
+            dtinfo.read_clf(self.clf,self.sxn,delete_yname(self.yn,self.subymk))
+        else:
+            dtinfo=None
         
         """評価値の決定"""
         fitness = []
@@ -132,7 +126,8 @@ class Problem:
         
         """ペナルティの計算"""#テスト未実施
         penalty=0
-        penalty += (len(self.sub_index)-self.Xtr.shape[0]*self.penalty_dnum) if self.Xtr.shape[0]*self.penalty_dnum < len(self.sub_index) else 0
+        penalty += ( len(self.sub_index)-self.Xtr.shape[0]*self.penalty_dnum[1]) if self.Xtr.shape[0]*self.penalty_dnum[1] < len(self.sub_index) else 0
+        penalty += (-len(self.sub_index)+self.Xtr.shape[0]*self.penalty_dnum[0]) if self.Xtr.shape[0]*self.penalty_dnum[0] > len(self.sub_index) else 0
         penalty += (self.penalty_ac - self.ac2) if self.penalty_ac > self.ac2 else 0
         penalty += (self.penalty_fm - self.fm2) if self.penalty_fm > self.fm2 else 0
         penalty += (self.size - self.penalty_sz) if self.penalty_sz < self.size else 0
@@ -141,9 +136,8 @@ class Problem:
         """データとして残す値の設定"""#テスト未実施
         #値にスカラー以外を入れる場合、別途ea_base.ind.detail_dealで処理を書き加える
         detail={'AC(mk)':round(self.ac,3), 'AC(ev)':round(self.ac2,3), 'AC(test)':round(self.ac3,3), 'size':self.size,
-                'F1(mk)':round(self.fm,3), 'F1(ev)':round(self.fm2,3), 'F1(test)':round(self.fm3,3), #'ac2var':ac2_variance,'fm2var':fm2_variance,'fmcv':fm2_variance/self.fm2,
+                'F1(mk)':round(self.fm,3), 'F1(ev)':round(self.fm2,3), 'F1(test)':round(self.fm3,3),
                 'mk_ratio':round(self.mk_ratio,3),'ev_ratio':round(self.ev_ratio,3),
-                #faverage
                 'importance_uniformity':round(self.imp_uniformity,3),
                 'importance_list':dict(zip(self.xn, self.importance))#ea_baseで特別な処理してる
                 }
@@ -225,6 +219,20 @@ def delete_xname(xnames,xbit):
         if xbit[i]==1:
             sxname.append(xnames[i])
     return sxname
+
+def delete_yname(yn_list,y_array):
+    """y_arrayに存在しない値と同じインデックスをyn_listから参照し、削除
+
+    Args:
+        yn_list (list): 名前リスト、リストの長さはy_arrayの値の種類と同じかそれ以上
+        y_array (ndarray): yデータ intの0~の整数を想定
+    """
+    syn_list=[]
+    for index in range(yn_list):
+        if index in y_array:
+            syn_list.append(syn_list[index])
+    return syn_list
+            
 
 def importance_deal(gene1,valuelist):
     """特徴量重要度を特徴量ごとのリストとして保存

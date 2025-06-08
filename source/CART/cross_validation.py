@@ -13,12 +13,13 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/drybeans_dataset.csv')
+df=pd.read_csv('../../database/digits_dataset.csv')
 X_df=df.iloc[:,1:-1]
 y_df=df.iloc[:,-1]
 X =X_df.values
 xname=X_df.columns.tolist()
 y,yname= pd.factorize(y_df)#値を整数値にエンコード
+#y,yname=y_df.values,[0,1]
 print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 """データのk分割"""
@@ -30,9 +31,9 @@ for fold, (train_idx, test_idx) in enumerate(kf.split(X,y)):
     
 #%%
 """Parameter Set"""
-outputfolder='../../output/simple_cart/drybeans/depth3'
-f1_score_average='weighted'#f値の計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
-depth=3
+outputfolder='../../output/simple_cart/digits/depth13'
+f1_score_average='macro'#f値の計測タイプ#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)
+depth=13
 
 #%%
 """Folder Creation"""
@@ -82,4 +83,4 @@ for i in range(k):
 df =pd.DataFrame(values_list,columns=columns)
 print(df.mean())
 df.to_csv(outputfolder+'/simpleCART_data.csv')
-# %%
+d# %%
