@@ -215,9 +215,9 @@ def delete_yname(yn_list,y_array):
         y_array (ndarray): yデータ intの0~の整数を想定
     """
     syn_list=[]
-    for index in range(yn_list):
-        if index in y_array:
-            syn_list.append(syn_list[index])
+    for label in yn_list:
+        if label in y_array:
+            syn_list.append(label)
     return syn_list
 
 def importance_deal(gene1,valuelist):
