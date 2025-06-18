@@ -11,27 +11,27 @@ from collections import Counter
 import seaborn as sns
 import matplotlib.pyplot as plt
 """データセットの準備※随時調整"""
-df=pd.read_csv('../../database/drybeans_dataset.csv')
+df=pd.read_csv('../../database/adult_dataset.csv')
 X_df=df.iloc[:,1:-1]
 y_df=df.iloc[:,-1]
 X =X_df.values
 xn=X_df.columns.tolist()
 y,yn= pd.factorize(y_df)#値を整数値にエンコード
-#y,yn= y_df.values,[0,1]
+y,yn= y_df.values,[0,1]
 print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method1/drybeans/holdout_depth4_7_constAC85'
+output_folder='../../output/method1/adult/Ho0.67_dp4_11_kepsimilar_nonuse_fmsz_dn35-63'
 k=3#繰り返し実行回数
-prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
-           'all_data_evaluation':True,
+prob_para={'f1_score_average':'binary',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+           'all_data_evaluation':False,
            'dtinfo_store':True,
            'mkbit': 6, 'evbit': 6, 
-           'plow_mk':0.3, 'phigh_mk':1.0, 'plow_ev':0.3, 'phigh_ev':1.0,'ev_per':0.3,
-           'dt_depth':2, 'depth_low':4,
-           'penalty_ac':0.85, 'penalty_sz':10000, 'penalty_fm':0,'penalty_fl':1,
-           'AC':1,'SZ':1,'FM':0,'FI':0}
+           'plow_mk':0.5, 'phigh_mk':0.9, 'plow_ev':0.7, 'phigh_ev':1.0,'ev_per':0.3,
+           'dt_depth':3, 'depth_low':4,
+           'penalty_ac':0.0, 'penalty_sz':10000, 'penalty_fm':0,'penalty_fl':1,
+           'AC':0,'SZ':1,'FM':1,'FI':0}
 ga_para={'ngen':50, 'keepsimilar':True, 'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
 genlist =list(range(0, ga_para['ngen']+1, int(ga_para['ngen']/5)))#グラフを書く世代(世代間)
 genlist2=[ga_para['ngen']]
@@ -112,3 +112,4 @@ for g in genlist2:
         ax=sns.scatterplot(data=pltdf, x=x, y=y, hue="run",alpha=0.75,palette="Set1")
         fig.savefig('graph/run_graph/{}_{}_scat_gen{}'.format(str(x),str(y),str(g)))
         plt.close(fig)
+# %%

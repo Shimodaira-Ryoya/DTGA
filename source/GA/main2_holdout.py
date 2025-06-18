@@ -18,21 +18,21 @@ y_df=df.iloc[:,-1]
 X =X_df.values
 xn=X_df.columns.tolist()
 y,yn= pd.factorize(y_df)#値を整数値にエンコード
-#y,yn=y_df.values,[0,1]
+y,yn=y_df.values,[0,1]
 print('table_shape;',X_df.shape)
 print('class sample;',y_df.value_counts())
 # %%
 """パラメータ設定※随時調整"""
-output_folder='../../output/method2/wine_red/ho0.67_dp20_alldata_fmsz'
+output_folder='../../output/method2/adult/ho067_dp4-11_dn3-7_similar_nonuse1.1'
 k=3
-prob_para={'f1_score_average':'weighted',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
-           'all_data_evaluation':True,#評価データを全トレーニングデータにするか
+prob_para={'f1_score_average':'binary',#f値の計測タイプ指定#binary(バイナリ),macro(均衡なデータ向き),weighted(不均衡なデータ向き),micro(全体の精度的なスコア)#chatgptより
+           'all_data_evaluation':False,#評価データを全トレーニングデータにするか
            'subnum':100,'sub_low':0.02,'sub_high':0.02,
-           'dt_depth':0, 'depth_low':20, 'penalty_dnum':[0.8,0.95],
+           'dt_depth':3, 'depth_low':4, 'penalty_dnum':[0.3,0.7],
            'penalty_ac':0, 'penalty_sz':1000, 'penalty_fm':0,'penalty_fl':1,
            'AC':0,'SZ':1,'FM':1,'FI':0,
-           'feature_lock':None, 'dtinfo_store':False}
-ga_para={'ngen':50, 'keepsimilar':False,'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.7}
+           'feature_lock':None, 'dtinfo_store':True}
+ga_para={'ngen':50, 'keepsimilar':True,'psize':100, 'pc':1, 'nvm':1, 'clones':False, 'vhigh':0.3}
 genlist =list(range(0, ga_para['ngen']+1, int(ga_para['ngen']/5)))#グラフを書く世代(世代間)
 genlist2=[ga_para['ngen']]
 print(genlist,genlist2)
